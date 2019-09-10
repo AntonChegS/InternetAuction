@@ -1,0 +1,579 @@
+﻿<!DOCTYPE html>
+
+<html   xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <style>
+        a {
+            font-size: 1.2em;
+            border-radius: 20px;
+          
+            background: blue;
+        }
+        .list_of_lots_state{
+            display:flex;
+            padding-top:20px;
+            padding-bottom:20px;
+        }
+        .not_allowed_lot, .not_allowed_lot_button,.closed_lot {
+            position: absolute;
+            height: 15px;
+            background-color: darkred;
+            font-weight: bold;
+            border-radius: 4px;
+            right: 0;
+            top: 0;
+        }
+        .not_allowed_lot_button {
+            top: 20px;
+            background-color: green;
+            
+            background-color:#33a555;
+        }
+            .not_allowed_lot_button:hover {
+                background-color: #42f477;
+            }
+
+            a:hover {
+                background: purple;
+            }
+        .addLot{
+
+            height:50px;
+            width:120px;
+            border-radius:4px;
+
+            background-color:purple;
+
+
+        }
+            .addLot:hover {
+                color:white;
+                background-color: black;
+            }
+        a.getOrder {
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            padding: .8em 1em calc(.8em + 3px);
+            border-radius: 3px;
+            background: rgb(64,199,129);
+            box-shadow: 0 -3px rgb(53,167,110) inset;
+            transition: 0.2s;
+        }
+        
+                a.getOrder:hover {
+                    background: rgb(53, 167, 110);
+                }
+
+                a.getOrder:active {
+                    background: rgb(33,147,90);
+                    box-shadow: 0 3px rgb(33,147,90) inset;
+                }
+
+        .getOrder {
+            transition: 1ms;
+            box-sizing: border-box;
+            box-shadow: rgb(178, 0, 255) 10px;
+        }
+        .addLotForm{
+            position:relative;
+            padding-top:200px;
+            margin:0 auto;
+            width:500px;
+            display:flex;
+            flex-direction:column;
+        }
+        .getOrder:hover {
+            background-color: purple;
+        }
+
+        img {
+            width: 100%;
+            height: 300px;
+        }
+
+        div {
+            display: inline-block;
+            margin: 20px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .form_container {
+            display: flex;
+            justify-content: center;
+        }
+
+            .form_container > div {
+                border-radius: 40px;
+                flex-basis: auto;
+                flex-grow: 0;
+                flex-shrink: 0;
+                height: 30vh;
+            }
+
+        .aboutRoom {
+            font-size: 1.2em;
+        }
+
+        .container > div {
+            flex-basis: auto;
+            flex-grow: 0;
+            flex-shrink: 1;
+        }
+
+        .containerElem {
+            position:relative;
+            background-color: #e8f442;
+            border-radius: 20px;
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .containerElem > div {
+                flex-basis: auto;
+                flex-grow: 0;
+                flex-shrink: 1;
+            }
+
+        .containerElem {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .butt {
+            flex-basis: 10vh;
+            flex-grow: 0;
+            flex-shrink: 0;
+        }
+
+        #tableBlock {
+            width: auto;
+        }
+
+        #editBlock {
+            display: none;
+            float: right;
+        }
+
+        #createBlock {
+            float: right;
+        }
+
+        .updatebut {
+            color: green;
+        }
+
+        .delbut {
+            color: red;
+        }
+
+            .delbut :hover {
+                color: yellow;
+            }
+
+        .updatebut:hover {
+            color: blueviolet;
+        }
+    </style>
+    <script src="~/Scripts/angular.js"></script>
+    <script src="~/Scripts/jquery-3.4.1.js"></script>
+
+    <script>
+        var anyApp = angular.module("LotsApp", []);
+
+        anyApp.controller("LotsController", ['$scope', '$http',function ($scope, $http) {
+            $http.get('/api/searchlot/lots').
+                then(function success(response) {
+                    $scope.lotss = response.data;
+                    $scope.lots = $scope.lotss;
+                    $scope.Sort();
+                }, function error(response) {
+                    console.log("Возникла ошибка");
+                }
+            );
+            $scope.openStateStatus = true;
+            $scope.closeStateStatus = false;
+            $scope.notAllowStateStatus = false;
+            $scope.ShowStatus = -1;
+            $scope.AddLotStatus = false;
+            $scope.Search = function () {
+                console.log($scope.lotss);
+                let arr = $scope.lotss;
+                let word =  $scope.search;
+
+                if (word === "") {
+                    $scope.lots = $scope.lotss
+                    return;
+                }
+                $scope.lots = arr.filter(x => x.Name.toLowerCase().includes(word.toLowerCase()));
+            }
+
+            $scope.ChangeShowStatus = (id)  => {
+                $scope.ShowStatus = id;
+            };
+
+            $scope.SetStavku = (cash, id) => {
+                let arr = $scope.lotss;
+                if (cash === undefined) {
+                    $scope.ShowStatus = -1;
+                    return;
+                }
+                arr.forEach(x => {
+                    
+                    if (x.Id === id) {
+
+                        if (!x.IsAllowed) {
+                            alert("Вы не можете сделать ставку,Озимай пока не одобрил этот лот(")
+                            return;
+                        }
+                        if (x.CurrPrice >= cash) {
+                            alert("Вы не можете сделать ставку, которая <= чем текущая стоимость(")
+                            return;
+                        }
+                        if (!x.IsOpen) {
+                            alert("Вы не можете сделать ставку,этот лот уже закрыт")
+                            return;
+                        }
+                        x.CurrPrice = cash;
+
+                    
+                        
+                    }
+                })
+                $scope.lotss = arr;
+                $http.post("/api/bargaining/bet", {
+                    LotId: +id,
+                    Price: +cash
+                }).
+                    then(function success(response) {
+                      
+                        $http.get('/api/searchlot/lots').
+                            then(function success(response) {
+                               
+                                console.log(response);
+                            }, function error(response) {
+                                console.log("Возникла ошибка");
+                            }
+                            );
+                    }, function error(response) {
+                        console.log("Возникла ошибка");
+                    });
+                    
+                $scope.ShowStatus = -1;
+            }
+            /*   public int? Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        public decimal StartPrice { get; set; }
+
+        public decimal CurrPrice { get; set; }
+
+        public decimal BuyNowPrice { get; set; }
+
+        public bool IsOpen { get; set; }
+
+        public bool IsAllowed { get; set; }
+
+        public string CategoryName { get; set; }
+             */
+            $scope.AddLot = () => {
+                
+                let lot = {
+                    Name: $scope.nameNewLot,
+                    Description: $scope.descrNewLot,
+                    StartPrice: $scope.StartPriceNewLot,
+                    BuyNowPrice: $scope.BuyNowPriceNewLot
+                }
+                let lotForFE = {
+                    Name: lot.Name,
+                    Description: lot.Description,
+                    StartPrice: lot.StartPrice,
+                    CurrPrice: lot.StartPrice,
+                    BuyNowPrice: lot.BuyNowPrice,
+                    IsOpen: false,
+                    IsAllowed: false,
+                    CategoryName: "Other"
+
+                }
+                if (lot.Name.length < 5) {
+                    alert("Название слишком короткое!Попробуйте ещё раз.");
+                    return;
+                }
+                if (lot.Description.length < 5) {
+                    
+                    alert("Описание слишком короткое!Попробуйте ещё раз.");
+                    return;
+                }
+                if (lot.BuyNowPrice <= 0) {
+                    alert("Некорректная цена.Попробуйте ещё раз");
+                    return;
+                }
+
+
+
+                $scope.lotss.push(lotForFE);
+                $scope.AddLotStatus = false;
+
+                $http.post('/api/createlot/create', lot).
+                    then(function success(response) {
+                        alert(response.data);
+                        console.log(response);
+                    }, function error(response) {
+                        console.log("Возникла ошибка");
+                    }
+                );
+
+                $http.get('/api/searchlot/lots').
+                    then(function success(response) {
+                        $scope.lotss = response.data;
+                        $scope.lots = $scope.lotss;
+                        console.log(response);
+                    }, function error(response) {
+                        console.log("Возникла ошибка");
+                    }
+                    );
+            }
+
+            $scope.BuyNow = (id) => {
+                let isAllowed = true;
+                $scope.lotss.forEach(x => {
+                    if (x.Id === id) {
+                        isAllowed = x.IsAllowed;
+                        if (isAllowed) x.IsOpen = false;
+                    }
+                  
+                });
+                if (!isAllowed) {
+                    alert("Лот пока не доступен!Попробуйте позже");
+                    return;
+                }
+             
+                alert("Озимай поздравляет вас с покупкой!")
+                $http.post("/api/bargaining/buy", {
+                    LotId: id
+                }).
+                    then(function success(response) {
+                        alert(response);
+
+                    }, function error(response) {
+                        console.log("Возникла ошибка");
+                    });
+
+
+
+
+            }
+            // настройка контроллера
+
+            $scope.AllowLot = (id) => {
+                let arr = $scope.lotss;
+                arr.forEach(x => {
+                    if (x.Id === id) {
+                        x.IsAllowed = true;
+                        x.IsOpen = true;
+                    }
+                });
+                $scope.lotss = arr;
+                $http.post("/api/bargaining/buy", {
+                    LotId: id
+                }).
+                    then(function success(response) {
+
+                        $scope.lotss == response.data;
+                    }, function error(response) {
+                        console.log("Возникла ошибка");
+                    });
+            }
+
+            $scope.Sort = function() {
+                let arr = [];
+                if ($scope.openStateStatus) {
+                    arr = [...$scope.lotss.filter(x => x.IsOpen === true)];
+                }
+                if ($scope.closeStateStatus) {
+                    arr = [...arr, ...$scope.lotss.filter(x => x.IsOpen === false && x.IsAllowed === true)];
+                }
+                if ($scope.notAllowStateStatus) {
+                    arr = [...arr, ...$scope.lotss.filter(x => x.IsAllowed === false)];
+                }
+                $scope.lots = arr;
+            
+
+            
+
+                console.log($scope.openStateStatus);
+                console.log($scope.closeStateStatus);
+                console.log($scope.notAllowStateStatus);
+
+            }
+
+            $scope.ResetFilter = () => {
+                $scope.openStateStatus = false;
+                $scope.closeStateStatus = false;
+                $scope.notAllowStateStatus = false;
+                $scope.lot = $scope.lotss;
+            }
+          
+        }]);
+       
+
+       
+    </script>
+</head>
+
+<body ng-app="LotsApp" ng-controller="LotsController">
+    <input type="search" name="name" id="searchText" value="" ng-change="Search()" ng-model="search" style="width:800px" />
+    <button ng-click="Search()"> Search</button>
+
+    <div class="list_of_lots_state">
+        <button ng-click="ResetFilter()">Сбросить фильтры</button>
+
+        <div>
+            <input type="checkbox" id="Open" name="open" ng-model="openStateStatus" ng-change="Sort()"
+                   checked>
+            <label for="Open">Open</label>
+        </div>
+
+        <div>
+            <input type="checkbox" id="Close" name="close" ng-model="closeStateStatus" ng-change="Sort()">
+            <label for="Close">Close</label>
+        </div>
+
+        <div>
+            <input type="checkbox" id="NotAllow" name="notAllow" ng-model="notAllowStateStatus" ng-change="Sort()">
+            <label for="NotAllow">NotAllow</label>
+        </div>
+    </div>
+
+    <div class="container">
+        <div ng-repeat="lot in lots" class="containerElem">
+            <div class="not_allowed_lot" ng-if="!lot.IsAllowed">Lot is not allowed </div>
+            <div class="closed_lot" ng-if="lot.IsAllowed && !lot.IsOpen">Lot is closed </div>
+            <div class="not_allowed_lot_button" ng-click="AllowLot(lot.Id)" ng-if="!lot.IsAllowed">Click to allowed</div>
+            <h2>{{lot.Name}}</h2>
+            <p class="aboutLot">Описание {{lot.Description}} </p>
+            <p class="currPrice">Текущая цена: <b>{{lot.CurrPrice}}</b></p>
+            <p class="BuyNowPrice">Купить сейчас:<b>{{lot.BuyNowPrice}}</b></p>
+            <a href='javascript:void(0)' ng-click="ChangeShowStatus(lot.Id)" class='getOrder' ng-show="ShowStatus !== lot.Id" id='getOrder' data-item='{{lot.Id}}'>Сделать ставку</a>
+            <a href='javascript:void(0)' ng-click="BuyNow(lot.Id)" class='getOrder' ng-show="ShowStatus !== lot.Id" id='getOrder' data-item='{{lot.Id}}'>Купить сейчас</a>
+            <label ng-show="ShowStatus == lot.Id"> <input type="number" ng-model="cash" ng-show="ShowStatus == lot.Id" /> Введите вашу ставку </label>
+
+            <a href='javascript:void(0)' ng-click="SetStavku(cash ,lot.Id)" ng-show="ShowStatus == lot.Id" class='getOrder' id='getOrder' data-item='{{lot.Id}}'>Подтвердить</a>
+        </div>
+    </div>
+
+    <div class="addLotForm">
+        <button class="addLot" ng-click="AddLotStatus=true" ng-show="!AddLotStatus">Добавить новый лот</button>
+        <label ng-show="AddLotStatus"><input type="text" name="Name" value="" ng-show="AddLotStatus" ng-model="nameNewLot" /> Название </label>
+        <label ng-show="AddLotStatus"><input type="text" name="Description" value="" ng-show="AddLotStatus" ng-model="descrNewLot" />Описание </label>
+        <label ng-show="AddLotStatus"><input type="number" name="StartPrice" value="" ng-show="AddLotStatus" ng-model="StartPriceNewLot" /> Начальная цена</label>
+        <label ng-show="AddLotStatus" ><input type="number" name="BuyNowPrice" value="" ng-show="AddLotStatus" ng-model="BuyNowPriceNewLot" /> Цена купить сейчас</label>
+        <button class="addLot" ng-show="AddLotStatus" ng-click="AddLot()">Отправить</button>
+        </div>
+
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+
+                //GetAllLots();
+
+
+            });
+
+            const SearchByWord = () => {
+
+                let word = {
+                    Word: document.getElementById("searchText").value
+                };
+
+                $.ajax({
+                    url: '/api/SearchLot/',
+                    type: 'GET',
+                    data: JSON.stringify(word),
+
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        WriteResponse(data);
+                    },
+                    error: function (x, y, z) {
+                        alert(x);
+                    }
+                });
+
+            }
+            // Получение всех книг по ajax-запросу
+            function GetAllLots() {
+
+
+                $.ajax({
+                    url: '/api/searchlot/lots',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        WriteResponse(data);
+                    },
+                    error: function (x, y, z) {
+                        alert(x);
+                    }
+                });
+            }
+
+            // Добавление новой книги
+
+            // Удаление книги
+
+            // вывод полученных данных на экран
+            function WriteResponse(lots) {
+
+
+
+
+
+
+                let strRes = '';
+                $.each(lots, (index, lot) => {
+
+                    strRes += '<div class="containerElem">' +
+                        '<div><h2>' + lot.Name + '</h2>' +
+                        '<p class=aboutRoom>' + lot.Description + '</p>' +
+                        '<p class="costRoom">Текущая Стоимость:' + lot.CurrPrice + '  \n Купить сейчас  ' + lot.BuyNowPrice + '</p>' +
+                        '</div >' +
+                        "<div class='butt'>" +
+                        "<a href = 'javascript:void(0)' class='getOrder' id = 'getOrder' data-item='" + lot.Name + "'onclick = 'GetOrder(this)';> Сделать ставку</a >" +
+                        "</div>" +
+                        "<form> " +
+                        "<p>Сделайте вашу ставку</p>" +
+                        "<input type='number'>" +
+                        " <p><input type='submit'></p></form >" +
+                        "</div>";
+
+
+
+                });
+
+
+                $(".container").html(strRes);
+
+            }
+                                    // обработчик удаления
+
+                                    // обработчик редактирования
+
+                                    // вывод данных редактируемой книги в поля для редактирования
+
+
+                                    // запрос книги на редактирование
+
+        </script>
+
+</body>
+</html>
